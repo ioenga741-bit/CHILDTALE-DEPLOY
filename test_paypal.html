@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PayPal Isolation Test</title>
+</head>
+
+<body style="font-family: sans-serif; padding: 50px; text-align: center;">
+
+    <h1>PayPal Connectivity Test</h1>
+    <p>Testing Client ID: <code id="clientIdDisplay">Loading...</code></p>
+
+    <div id="paypal-button-container" style="max-width: 300px; margin: 20px auto;"></div>
+
+    <div id="status" style="margin-top: 20px; font-weight: bold; color: #555;">Waiting for script...</div>
+
+    <script>
+        // Use the exact key from the user's environment to test isolation
+        const CLIENT_ID = 'ASwNslhEydqpfZ9uB-pisRdhUNG4M0mqGP2gzLYeaOjDC17DrbAntpaE31CwNGOfF6cqvzH6em3Xzii6';
+
+        document.getElementById('clientIdDisplay').textContent = CLIENT_ID.substring(0, 10) + '...';
+
+        const script = document.createElement('script');
+        // Standard Checkout (v5) - simplest test
+        script.src = `https://www.paypal.com/sdk/js?client-id=${CLIENT_ID}&currency=USD&debug=true`;
+
+        script.onload = () => {
+            document.getElementById('status').textContent = "Script Loaded. Rendering Buttons...";
+            document.getElementById('status').style.color = "blue";
+
+            try {
+                paypal.Buttons({
+                    createOrder: function (data, actions) {
+                        return actions.order.create({
+                            purchase_units: [{
+                                amount: { value: '0.01' }
+                            }]
+                        });
+                    },
+                    onApprove: function (data, actions) {
+                        alert('Transaction completed by ' + data.payer.payer_id);
+                    },
+                    onError: function (err) {
+                        console.error(err);
+                        document.getElementById('status').textContent = "Button Error: " + err.message;
+                        document.getElementById('status').style.color = "red";
+                    }
+                }).render('#paypal-button-container');
+            } catch (e) {
+                document.getElementById('status').textContent = "Render Failed: " + e.message;
+                document.getElementById('status').style.color = "red";
+            }
+        };
+
+        script.onerror = () => {
+            document.getElementById('status').textContent = "FAILED to load PayPal Script (400 Bad Request likely)";
+            document.getElementById('status').style.color = "red";
+        };
+
+        document.body.appendChild(script);
+    </script>
+</body>
+
+</html>
